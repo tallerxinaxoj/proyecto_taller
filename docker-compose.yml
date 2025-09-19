@@ -1,0 +1,17 @@
+version: '3.8'
+services:
+  postgres:
+    image: postgres:13
+    container_name: xinaxoj-db
+    environment:
+      POSTGRES_DB: xinaxoj_taller
+      POSTGRES_USER: xinaxoj_user
+      POSTGRES_PASSWORD: XinaxojPassword123!
+    ports:
+      - "5439:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
