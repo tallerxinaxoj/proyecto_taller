@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enums
+enum rol_usuario {
+  admin
+  mecanico
+}
+
+enum estado_orden {
+  ingresada
+  en_proceso
+  completada
+  cancelada
+}
+
+enum tipo_producto {
+  repuesto
+  herramienta
+}
+
+// Modelos
+model Usuario {
+  id             Int             @id @default(autoincrement())
+  username       String          @unique
+  password       String
+  rol            rol_usuario
+  nombre         String
+  activo         Boolean         @default(true)
+  fecha_creacion DateTime        @default(now())
+  ordenes        OrdenTrabajo[]
+}
+
+model Cliente {
+  id             Int             @id @default(autoincrement())
+  nombre         String
+  telefono       String
+  email          String?
+  direccion      String?
+  fecha_registro DateTime        @default(now())
+  motocicletas   Motocicleta[]
+  ordenes        OrdenTrabajo[]
+}
+
+model Motocicleta {
+  id          Int          @id @default(autoincrement())
+  clienteId   Int
+  cliente     Cliente      @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  marca       String
+  modelo      String
+  año         Int?
+  placa       String?      @unique
+  vin         String?
+  kilometraje Int?         @default(0)
+  color       String?
+  ordenes     OrdenTrabajo[]
+}
+
+model Producto {
+  id            Int                 @id @default(autoincrement())
+  nombre        String
+  descripcion   String?
+  tipo          tipo_producto
+  precio_compra Float?
+  precio_venta  Float?
+  stock         Int        @default(0)
+  stock_minimo  Int        @default(3)
+  activo        Boolean    @default(true)
+  utilizados    ProductoUtilizado[]
+}
+
+model OrdenTrabajo {
+  id              Int                   @id @default(autoincrement())
+  codigo          String                @unique
+  clienteId       Int
+  cliente         Cliente               @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  motocicletaId   Int
+  motocicleta     Motocicleta           @relation(fields: [motocicletaId], references: [id], onDelete: Cascade)
+  usuarioId       Int?
+  usuario         Usuario?              @relation(fields: [usuarioId], references: [id])
+  fecha_creacion  DateTime              @default(now())
+  fecha_estimada  DateTime?
+  estado          estado_orden          @default(ingresada)
+  problema        String
+  diagnostico     String?
+  observaciones   String?
+  total           Float                 @default(0)
+  servicios_aplicados ServiciosAplicados[]
+  productos_utilizados ProductoUtilizado[]
+}
+
+model Servicio {
+  id              Int                  @id @default(autoincrement())
+  nombre          String
+  descripcion     String?
+  precio          Float
+  duracion_minutos Int?
+  activo          Boolean              @default(true)
+  aplicados       ServiciosAplicados[]
+}
+
+model ServiciosAplicados {
+  id           Int          @id @default(autoincrement())
+  ordenId      Int
+  orden        OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  servicioId   Int
+  servicio     Servicio     @relation(fields: [servicioId], references: [id])
+  cantidad     Int          @default(1)
+  precio       Float?
+  observaciones String?
+}
+
+model ProductoUtilizado {
+  id            Int          @id @default(autoincrement())
+  ordenId       Int
+  orden         OrdenTrabajo @relation(fields: [ordenId], references: [id], onDelete: Cascade)
+  productoId    Int
+  producto      Producto     @relation(fields: [productoId], references: [id])
+  cantidad      Int
+  precio_unitario Float?
+  observaciones  String?
+}
