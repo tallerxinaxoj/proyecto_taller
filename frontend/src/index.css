@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root { color-scheme: dark; }
+html, body, #root { height: 100%; }
+/* Fondo negro/gris oscuro consistente */
+body { @apply bg-dark text-white; }
+
+/* Opcional: suavizar tarjetas y bordes */
+.card-shadow { box-shadow: 0 1px 0 rgba(0,0,0,0.2), 0 6px 20px rgba(0,0,0,0.12); }
+
+/* Scrollbar oscuro y sutil */
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #0b0b0e; }
+*::-webkit-scrollbar-thumb { background-color: #2b2d31; border-radius: 6px; border: 2px solid #0b0b0e; }
+* { scrollbar-color: #2b2d31 #0b0b0e; scrollbar-width: thin; }
