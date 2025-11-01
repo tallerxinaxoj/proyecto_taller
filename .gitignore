@@ -1,0 +1,15 @@
+node_modules
+dist
+.DS_Store
+*.log
+.env
+.env.local
+.env.*.local
+coverage
+build
+.turbo
+.cache
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
