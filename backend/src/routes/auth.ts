@@ -44,4 +44,30 @@ router.post('/users', requireAuth, requireRole('ADMIN'), async (req, res) => {
   }
 });
 
+// Actualizar usuario (ADMIN)
+router.patch('/users/:id', requireAuth, requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  const { name, email, role, password } = req.body || {};
+  const data: any = { name, email };
+  if (role === 'ADMIN' || role === 'MECANICO') data.role = role;
+  if (password) data.passwordHash = await bcrypt.hash(password, 10);
+  try {
+    const user = await prisma.user.update({ where: { id }, data });
+    res.json({ id: user.id, name: user.name, email: user.email, role: user.role });
+  } catch {
+    res.status(400).json({ error: 'No se pudo actualizar usuario' });
+  }
+});
+
+// Eliminar usuario (ADMIN)
+router.delete('/users/:id', requireAuth, requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await prisma.user.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(400).json({ error: 'No se pudo eliminar usuario' });
+  }
+});
+
 export default router;

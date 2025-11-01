@@ -84,6 +84,7 @@ model Order {
   status       OrderStatus          @default(RECIBIDA)
   totalParts   Decimal              @default(0)
   totalLabor   Decimal              @default(0)
+  expectedAt   DateTime?
   createdAt    DateTime             @default(now())
   updatedAt    DateTime             @updatedAt
   items        OrderItem[]
@@ -108,4 +109,3 @@ model OrderStatusHistory {
   note      String?
   createdAt DateTime     @default(now())
 }
-

@@ -8,6 +8,7 @@ export default function Users() {
   const { token } = useAuth();
   const [list, setList] = useState<User[]>([]);
   const [form, setForm] = useState({ name: '', email: '', password: '', role: 'MECANICO' as 'ADMIN'|'MECANICO' });
+  const [edit, setEdit] = useState<Record<number, { role?: 'ADMIN'|'MECANICO'; password?: string }>>({});
   const [error, setError] = useState('');
 
   const load = async () => {
@@ -25,6 +26,20 @@ export default function Users() {
       setForm({ name: '', email: '', password: '', role: 'MECANICO' });
       await load();
     } catch (e: any) { setError(e.message); }
+  };
+
+  const save = async (u: User) => {
+    const changes = edit[u.id];
+    if (!changes) return;
+    await apiFetch(`/api/auth/users/${u.id}`, { method: 'PATCH', body: JSON.stringify(changes) }, token);
+    const cp = { ...edit }; delete cp[u.id]; setEdit(cp);
+    await load();
+  };
+
+  const removeUser = async (u: User) => {
+    if (!confirm(`Eliminar usuario ${u.name}?`)) return;
+    await apiFetch(`/api/auth/users/${u.id}`, { method: 'DELETE' }, token);
+    await load();
   };
 
   return (
@@ -45,16 +60,24 @@ export default function Users() {
 
       <div className="grid gap-2">
         {list.map(u => (
-          <div key={u.id} className="bg-grayish p-3 rounded flex justify-between items-center">
-            <div>
-              <div className="font-medium">{u.name} — <span className="text-primary">{u.role}</span></div>
+          <div key={u.id} className="bg-grayish p-3 rounded grid grid-cols-6 gap-2 items-center">
+            <div className="col-span-2">
+              <div className="font-medium">{u.name}</div>
               <div className="text-sm text-gray-300">{u.email}</div>
             </div>
+            <select className="bg-dark p-2 rounded" defaultValue={u.role} onChange={e=>setEdit({...edit, [u.id]: { ...(edit[u.id]||{}), role: e.target.value as any }})}>
+              <option value="MECANICO">Mecánico</option>
+              <option value="ADMIN">Admin</option>
+            </select>
+            <input className="bg-dark p-2 rounded" type="password" placeholder="Nueva contraseña (opcional)" onChange={e=>setEdit({...edit, [u.id]: { ...(edit[u.id]||{}), password: e.target.value }})} />
             <div className="text-xs text-gray-400">{new Date(u.createdAt).toLocaleString()}</div>
+            <div className="flex gap-2 justify-end">
+              <button className="bg-primary px-2 py-1 rounded" onClick={()=>save(u)}>Guardar</button>
+              <button className="bg-dark px-2 py-1 rounded text-red-400" onClick={()=>removeUser(u)}>Eliminar</button>
+            </div>
           </div>
         ))}
       </div>
     </div>
   );
 }
-

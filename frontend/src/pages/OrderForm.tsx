@@ -17,6 +17,8 @@ export default function OrderForm() {
   const [motorcycle, setMotorcycle] = useState({ brand: '', model: '', plate: '', vin: '', year: '' });
   const [items, setItems] = useState<Array<{ productId: number; quantity: number }>>([]);
   const [description, setDescription] = useState('');
+  const [totalLabor, setTotalLabor] = useState<number>(0);
+  const [expectedAt, setExpectedAt] = useState<string>('');
 
   useEffect(() => {
     apiFetch<Product[]>('/api/products', {}, token).then(setProducts);
@@ -31,7 +33,7 @@ export default function OrderForm() {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const body: any = { description, motorcycle, items };
+    const body: any = { description, motorcycle, items, totalLabor, expectedAt };
     if (useExistingClient && clientId) body.clientId = clientId;
     else body.client = client;
     await apiFetch('/api/orders', { method: 'POST', body: JSON.stringify(body) }, token);
@@ -100,7 +102,22 @@ export default function OrderForm() {
         </div>
       </div>
 
-      <textarea className="bg-grayish p-2 rounded" placeholder="Descripción" onChange={e => setDescription(e.target.value)} />
+      <div className="grid md:grid-cols-2 gap-3">
+        <div className="bg-grayish p-3 rounded">
+          <label className="block text-xs text-gray-300 mb-1">Descripción</label>
+          <textarea className="bg-dark p-2 rounded w-full" placeholder="Descripción" onChange={e => setDescription(e.target.value)} />
+        </div>
+        <div className="bg-grayish p-3 rounded grid grid-cols-2 gap-2">
+          <div>
+            <label className="block text-xs text-gray-300 mb-1">Mano de obra</label>
+            <input type="number" className="bg-dark p-2 rounded w-full" placeholder="0" value={totalLabor} onChange={e=>setTotalLabor(Number(e.target.value))} />
+          </div>
+          <div>
+            <label className="block text-xs text-gray-300 mb-1">Fecha entrega estimada</label>
+            <input type="date" className="bg-dark p-2 rounded w-full" value={expectedAt} onChange={e=>setExpectedAt(e.target.value)} />
+          </div>
+        </div>
+      </div>
 
       <button className="bg-primary px-4 py-2 rounded">Crear Orden</button>
     </form>

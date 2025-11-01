@@ -19,5 +19,35 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
   res.status(201).json(c);
 });
 
-export default router;
+// Obtener uno (ADMIN)
+router.get('/:id', requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  const c = await prisma.client.findUnique({ where: { id } });
+  if (!c) return res.status(404).json({ error: 'No encontrado' });
+  res.json(c);
+});
 
+// Actualizar (ADMIN)
+router.patch('/:id', requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  const { name, phone, whatsapp, email, address } = req.body || {};
+  try {
+    const c = await prisma.client.update({ where: { id }, data: { name, phone, whatsapp, email, address } });
+    res.json(c);
+  } catch {
+    res.status(400).json({ error: 'No se pudo actualizar' });
+  }
+});
+
+// Eliminar (ADMIN)
+router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await prisma.client.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(400).json({ error: 'No se pudo eliminar (¿tiene órdenes?)' });
+  }
+});
+
+export default router;

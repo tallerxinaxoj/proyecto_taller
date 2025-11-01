@@ -21,8 +21,24 @@ router.get('/', async (_req, res) => {
   res.json(orders);
 });
 
+// Obtener una orden
+router.get('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const order = await prisma.order.findUnique({
+    where: { id },
+    include: {
+      client: true,
+      motorcycle: true,
+      items: { include: { product: true } },
+      history: { orderBy: { createdAt: 'desc' } }
+    }
+  });
+  if (!order) return res.status(404).json({ error: 'No encontrada' });
+  res.json(order);
+});
+
 router.post('/', async (req, res) => {
-  const { clientId, client, motorcycle, description, items } = req.body || {};
+  const { clientId, client, motorcycle, description, items, totalLabor, expectedAt } = req.body || {};
 
   try {
     const cId = clientId || (await prisma.client.create({
@@ -73,7 +89,8 @@ router.post('/', async (req, res) => {
           description,
           status: OrderStatus.RECIBIDA,
           totalParts,
-          totalLabor: 0
+          totalLabor: Number(totalLabor) || 0,
+          expectedAt: expectedAt ? new Date(expectedAt) : undefined
         }
       });
 
@@ -133,3 +150,62 @@ router.post('/:id/status', async (req, res) => {
 });
 
 export default router;
+
+// Agregar item a la orden (ADMIN o MECANICO)
+router.post('/:id/items', async (req, res) => {
+  const id = Number(req.params.id);
+  const { productId, quantity } = req.body || {};
+  if (!productId || !quantity) return res.status(400).json({ error: 'productId y quantity requeridos' });
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const product = await tx.product.findUnique({ where: { id: productId } });
+      if (!product) throw new Error('Producto no existe');
+      if (product.stock < quantity) throw new Error('Stock insuficiente');
+      await tx.orderItem.create({ data: { orderId: id, productId, quantity, unitPrice: product.price } });
+      await tx.product.update({ where: { id: productId }, data: { stock: product.stock - quantity } });
+      const items = await tx.orderItem.findMany({ where: { orderId: id } });
+      const totalParts = items.reduce((acc, it) => acc + Number(it.unitPrice) * it.quantity, 0);
+      await tx.order.update({ where: { id }, data: { totalParts } });
+      return tx.order.findUnique({ where: { id }, include: { client: true, motorcycle: true, items: { include: { product: true } }, history: true } });
+    });
+    res.json(result);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || 'No se pudo agregar item' });
+  }
+});
+
+// Quitar item de la orden y restaurar stock
+router.delete('/:id/items/:itemId', async (req, res) => {
+  const id = Number(req.params.id);
+  const itemId = Number(req.params.itemId);
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const item = await tx.orderItem.findUnique({ where: { id: itemId } });
+      if (!item || item.orderId !== id) throw new Error('Item no encontrado');
+      const product = await tx.product.findUnique({ where: { id: item.productId } });
+      if (product) {
+        await tx.product.update({ where: { id: product.id }, data: { stock: product.stock + item.quantity } });
+      }
+      await tx.orderItem.delete({ where: { id: itemId } });
+      const items = await tx.orderItem.findMany({ where: { orderId: id } });
+      const totalParts = items.reduce((acc, it) => acc + Number(it.unitPrice) * it.quantity, 0);
+      await tx.order.update({ where: { id }, data: { totalParts } });
+      return tx.order.findUnique({ where: { id }, include: { client: true, motorcycle: true, items: { include: { product: true } }, history: true } });
+    });
+    res.json(result);
+  } catch (e: any) {
+    res.status(400).json({ error: e.message || 'No se pudo quitar item' });
+  }
+});
+
+// Actualizar datos básicos de orden
+router.patch('/:id', async (req, res) => {
+  const id = Number(req.params.id);
+  const { description, totalLabor, expectedAt } = req.body || {};
+  try {
+    const o = await prisma.order.update({ where: { id }, data: { description, totalLabor, expectedAt: expectedAt ? new Date(expectedAt) : undefined } });
+    res.json(o);
+  } catch {
+    res.status(400).json({ error: 'No se pudo actualizar la orden' });
+  }
+});

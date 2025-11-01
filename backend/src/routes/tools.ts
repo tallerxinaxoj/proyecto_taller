@@ -19,5 +19,25 @@ router.post('/', requireRole('ADMIN'), async (req, res) => {
   res.status(201).json(t);
 });
 
-export default router;
+router.patch('/:id', requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  const { name, code, quantity, location } = req.body || {};
+  try {
+    const t = await prisma.tool.update({ where: { id }, data: { name, code, quantity, location } });
+    res.json(t);
+  } catch {
+    res.status(400).json({ error: 'No se pudo actualizar' });
+  }
+});
 
+router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await prisma.tool.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(400).json({ error: 'No se pudo eliminar' });
+  }
+});
+
+export default router;

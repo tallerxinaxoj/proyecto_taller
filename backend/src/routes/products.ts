@@ -34,5 +34,14 @@ router.patch('/:id', requireRole('ADMIN'), async (req, res) => {
   }
 });
 
-export default router;
+router.delete('/:id', requireRole('ADMIN'), async (req, res) => {
+  const id = Number(req.params.id);
+  try {
+    await prisma.product.delete({ where: { id } });
+    res.json({ ok: true });
+  } catch {
+    res.status(400).json({ error: 'No se pudo eliminar (¿asociado a órdenes?)' });
+  }
+});
 
+export default router;
