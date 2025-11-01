@@ -21,3 +21,10 @@ uploads/
 backend/.env*
 frontend/.env*
 frontend-public/.env*
+
+# Env files
+**/.env
+**/.env.*
+backend/.env*
+frontend/.env*
+frontend-public/.env*
