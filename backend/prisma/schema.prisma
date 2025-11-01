@@ -1,0 +1,111 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MECANICO
+}
+
+enum OrderStatus {
+  RECIBIDA
+  DIAGNOSTICO
+  EN_PROCESO
+  LISTA
+  ENTREGADA
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(MECANICO)
+  createdAt    DateTime @default(now())
+}
+
+model Client {
+  id        Int          @id @default(autoincrement())
+  name      String
+  phone     String
+  whatsapp  String
+  email     String?
+  address   String?
+  bikes     Motorcycle[]
+  orders    Order[]
+  createdAt DateTime      @default(now())
+}
+
+model Motorcycle {
+  id         Int       @id @default(autoincrement())
+  client     Client    @relation(fields: [clientId], references: [id])
+  clientId   Int
+  brand      String
+  model      String
+  plate      String    @unique
+  vin        String?
+  year       Int?
+  orders     Order[]
+}
+
+model Product {
+  id        Int      @id @default(autoincrement())
+  name      String
+  sku       String   @unique
+  stock     Int      @default(0)
+  price     Decimal  @default(0)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  items     OrderItem[]
+}
+
+model Tool {
+  id        Int      @id @default(autoincrement())
+  name      String
+  code      String?
+  quantity  Int      @default(1)
+  location  String?
+  createdAt DateTime @default(now())
+}
+
+model Order {
+  id           Int                  @id @default(autoincrement())
+  code         String               @unique
+  client       Client               @relation(fields: [clientId], references: [id])
+  clientId     Int
+  motorcycle   Motorcycle           @relation(fields: [motorcycleId], references: [id])
+  motorcycleId Int
+  description  String?
+  status       OrderStatus          @default(RECIBIDA)
+  totalParts   Decimal              @default(0)
+  totalLabor   Decimal              @default(0)
+  expectedAt   DateTime?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  items        OrderItem[]
+  history      OrderStatusHistory[]
+}
+
+model OrderItem {
+  id        Int     @id @default(autoincrement())
+  order     Order   @relation(fields: [orderId], references: [id])
+  orderId   Int
+  product   Product @relation(fields: [productId], references: [id])
+  productId Int
+  quantity  Int
+  unitPrice Decimal
+}
+
+model OrderStatusHistory {
+  id        Int         @id @default(autoincrement())
+  order     Order       @relation(fields: [orderId], references: [id])
+  orderId   Int
+  status    OrderStatus
+  note      String?
+  createdAt DateTime     @default(now())
+}
